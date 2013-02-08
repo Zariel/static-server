@@ -1,0 +1,20 @@
+{
+  "author": "Chris Bannister <c.bannister@gmail.com>",
+  "name": "static-server",
+  "description": "Static file server",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git@dicomexplorer.net:chris/project.git"
+  },
+  "main": "server.ls",
+  "dependencies": {
+    "ecstatic": ">= 0.3.x",
+    "http-proxy": ">= 0.8.x"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
