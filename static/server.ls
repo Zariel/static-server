@@ -3,7 +3,6 @@ http = require \http
 ecstatic = require \ecstatic
 proxy = require \http-proxy
 connect = require \connect
-by-url = require \proxy-by-url
 
 /*
 cluster = require \cluster
