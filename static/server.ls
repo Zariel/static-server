@@ -2,6 +2,8 @@ http = require \http
 
 ecstatic = require \ecstatic
 proxy = require \http-proxy
+connect = require \connect
+by-url = require \proxy-by-url
 
 /*
 cluster = require \cluster
@@ -19,14 +21,16 @@ else
 
 http.createServer (ecstatic {
     root: "#__dirname/public"
-    autoIndex: true }) .listen 8082
+    gzip: true
+    autoIndex: true
+}) .listen 8082
 
 console.log "HTTP static server listening on port 8082 .."
 
 opts =
     router:
-        'localhost/api': 'localhost:8080/curiosity/api/'
-        'localhost': 'localhost:8082'
+        'localhost/api': 'localhost:8080/curiosity/api'
+        '.*': 'localhost:8082'
 
 proxy.createServer opts .listen 80
 
