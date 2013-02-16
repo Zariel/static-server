@@ -31,6 +31,6 @@ opts =
         'localhost/api': 'localhost:8080/curiosity/api'
         '.*': 'localhost:8082'
 
-proxy.createServer opts .listen 80
+proxy.createServer connect.logger!, opts .listen 80
 
 console.log "Proxy listening on port 80 .."
