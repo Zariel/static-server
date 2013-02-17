@@ -29,5 +29,5 @@ node_modules
 npm-debug.log
 
 /static/public
-/web/app/assets/*/*.html
+/web/app/assets/partials/
 /web/app/assets/*.html
