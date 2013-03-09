@@ -6,7 +6,7 @@ var express = require("express")
 var ecstatic = require("ecstatic")
 
 var logger = function(req, res, next) {
-    console.log("(%d) => %s %s", cluster.worker.id, req.method, req.url)
+	console.log("(%d) => %s %s", cluster.worker.id, req.method, req.url)
 
 	return next()
 }
@@ -14,6 +14,7 @@ var logger = function(req, res, next) {
 var app = express()
 
 app.use(logger)
+
 app.use(ecstatic({
     root: __dirname + "/public",
     cache: 0,
@@ -33,8 +34,8 @@ var opts = {
 	}
 }
 
-httpServer = http.createServer(app)
-proxyServer = proxy.createServer(logger, opts)
+var httpServer = http.createServer(app)
+var proxyServer = proxy.createServer(logger, opts)
 
 if(cluster.isMaster) {
 	var numCpus = require("os").cpus().length
