@@ -5,6 +5,10 @@ var proxy = require("http-proxy")
 var express = require("express")
 var ecstatic = require("ecstatic")
 
+var config = require("./config")
+
+var root = config.root
+
 var logger = function(req, res, next) {
 	console.log("(%d) => %s %s", cluster.worker.id, req.method, req.url)
 
@@ -16,7 +20,7 @@ var app = express()
 app.use(logger)
 
 app.use(ecstatic({
-    root: __dirname + "/public",
+    root: root,
     cache: 0,
     gzip: true,
     handleError: false,
@@ -24,7 +28,7 @@ app.use(ecstatic({
 }))
 
 app.use(function(req, res, next) {
-	return res.status(200).sendfile(__dirname + "/public/index.html")
+	return res.status(200).sendfile(root + "/index.html")
 })
 
 var opts = {
