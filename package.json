@@ -9,8 +9,8 @@
   },
   "main": "server.ls",
   "dependencies": {
-    "ecstatic": ">= 0.3.x",
-    "http-proxy": ">= 0.8.x",
+    "ecstatic": "git://github.com/Zariel/node-ecstatic.git#custom-cache-control",
+    "http-proxy": "git://github.com/Zariel/node-http-proxy.git#pathname-targets",
 	"express": ">= 3.1.x"
   },
   "devDependencies": {},
