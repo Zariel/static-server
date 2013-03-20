@@ -1,45 +1,5 @@
-var http = require("http")
 var cluster = require("cluster")
-
-var proxy = require("http-proxy")
-var express = require("express")
-var ecstatic = require("ecstatic")
-
 var config = require("./config")
-
-var root = config.root
-
-var logger = function(req, res, next) {
-	console.log("(%d) => %s %s", cluster.worker.id, req.method, req.url)
-
-	return next()
-}
-
-var app = express()
-
-app.use(logger)
-
-app.use(ecstatic({
-    root: root,
-    cache: 0,
-    gzip: true,
-    handleError: false,
-    autoIndex: true
-}))
-
-app.use(function(req, res, next) {
-	return res.status(200).sendfile(root + "/index.html")
-})
-
-var opts = {
-	router: {
-		'localhost/api': 'localhost:8080/curiosity/api',
-		'.*': 'localhost:8082'
-	}
-}
-
-var httpServer = http.createServer(app)
-var proxyServer = proxy.createServer(logger, opts)
 
 if(cluster.isMaster) {
 	var numCpus = require("os").cpus().length
@@ -55,13 +15,83 @@ if(cluster.isMaster) {
 	cluster.on('exit', function(worker, code, signal) {
 		return console.log('Worker ' + worker.id + ' died')
 	})
-} else {
-	var id = cluster.worker.id;
-	if (process.env.proxy === "true") {
-		console.log("[" + id + "] HTTP Proxy listening on port 80 ..")
-		proxyServer.listen(80)
-	} else {
-		console.log("[" + id + "] HTTP static server listening on port 8082 ..")
-		httpServer.listen(8082)
+
+	return
+}
+
+var logger = function(from, id) {
+	return function(req, res, next) {
+		console.log("[%s] (%d) => %s %s", from, id, req.method, req.url)
+
+		return next()
 	}
+}
+
+config.proxy = config.proxy || {}
+config.proxy.host = config.proxy.host || "localhost"
+config.proxy.port = (config.proxy.port === undefined) ? 80 : config.proxy.port
+config.proxy.api = config.proxy.api || {}
+config.api.uri = config.api.uri || "localhost:8080/api"
+config.api.path = config.api.path || "/api"
+config.files.host = config.files.host || "localhost:8081"
+config.files.port = (config.files.port === undefined) ? 8081 : config.files.port
+
+var id = cluster.worker.id;
+
+var getStaticServer = function() {
+	var http = require("http")
+	var path = require("path")
+
+	var express = require("express")
+	var ecstatic = require("ecstatic")
+
+	var root = path.join(__dirname, config.files.root)
+
+	var app = express()
+
+	app.use(logger("STATIC", id))
+
+	var server = ecstatic({
+		root: root,
+		cache: "no-cache",
+		gzip: true,
+		handleError: false,
+		autoIndex: true
+	})
+
+	app.use(server)
+
+	app.use(function(req, res, next) {
+		return res.status(200).sendfile(root + "/index.html")
+	})
+
+	var httpServer = http.createServer(app)
+
+	return httpServer
+}
+
+var getProxyServer = function() {
+	var proxy = require("http-proxy")
+
+	var files = config.files.host + ":" + config.files.port
+
+	var opts = {
+		pathnameOnly: true,
+		router: {
+			"/api": config.api.url,
+			"/": files
+		}
+	}
+
+	var proxyServer = proxy.createServer(logger("PROXY", id), opts)
+
+	return proxyServer
+}
+
+if(id % 2 == 0) {
+	console.log("[" + id + "] HTTP Proxy listening on " + config.proxy.host + ":" + config.proxy.port)
+	getProxyServer().listen(config.proxy.port, config.proxy.host)
+} else {
+	console.log("[" + id + "] HTTP static server listening on " + config.files.host + ":" + config.files.port)
+	getStaticServer().listen(config.files.port, config.files.host)
 }
