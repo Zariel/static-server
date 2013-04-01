@@ -49,21 +49,42 @@ var getStaticServer = function() {
 
 	var app = express()
 
-	app.use(logger("STATIC", id))
+	var log = logger("STATIC", id)
+	app.use(log)
+
+	app.use(function(req, res, next) {
+		var path = url.parse(req.originalUrl).pathname
+		var folder = path.match(/^\/[^\/]*\//)
+
+		if(folder === null) {
+			return next()
+		}
+
+		var root = folder[0]
+		switch(root) {
+			case "/css/":
+			case "/js/":
+			case "/partials/":
+			case "/font/":
+			case "/img/":
+				return next()
+		}
+
+		req.url = "/index.html"
+		console.log(req.originalUrl + " => " + req.url)
+
+		next()
+	})
 
 	var server = ecstatic({
 		root: root,
 		cache: "no-cache",
 		gzip: true,
-		handleError: false,
+		handleError: true,
 		autoIndex: true
 	})
 
 	app.use(server)
-
-	app.use(function(req, res, next) {
-		return res.status(200).sendfile(root + "/index.html")
-	})
 
 	var httpServer = http.createServer(app)
 
