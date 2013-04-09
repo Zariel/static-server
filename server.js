@@ -1,5 +1,6 @@
 var cluster = require("cluster")
 var config = require("./config")
+var url = require("url")
 
 if(cluster.isMaster) {
 	var numCpus = require("os").cpus().length
@@ -38,26 +39,35 @@ config.files.port = (config.files.port === undefined) ? 8081 : config.files.port
 
 var id = cluster.worker.id;
 
+var http = require("http")
+var path = require("path")
+//var httpProxy = require("http-proxy")
+var lactate = require("lactate")
+var Proxy = require("./lib/proxy")
+
 var getStaticServer = function() {
-	var http = require("http")
-	var path = require("path")
-
-	var express = require("express")
-	var ecstatic = require("ecstatic")
-
 	var root = path.join(__dirname, config.files.root)
 
-	var app = express()
-
 	var log = logger("STATIC", id)
-	app.use(log)
 
-	app.use(function(req, res, next) {
-		var path = url.parse(req.originalUrl).pathname
+	var files = lactate.Lactate({
+		root: root,
+	})
+
+	var staticServe = function(req, res) {
+		files.serve(req, res)
+	}
+
+	return function(req, res) {
+
+		var originalUrl = req.url
+		var path = url.parse(originalUrl).pathname
+		req.url = path
 		var folder = path.match(/^\/[^\/]*\//)
 
 		if(folder === null) {
-			return next()
+			req.url = "/index.html"
+			return staticServe(req, res)
 		}
 
 		var root = folder[0]
@@ -67,28 +77,13 @@ var getStaticServer = function() {
 			case "/partials/":
 			case "/font/":
 			case "/img/":
-				return next()
+				return staticServe(req, res)
 		}
 
 		req.url = "/index.html"
-		console.log(req.originalUrl + " => " + req.url)
 
-		next()
-	})
-
-	var server = ecstatic({
-		root: root,
-		cache: "no-cache",
-		gzip: true,
-		handleError: true,
-		autoIndex: true
-	})
-
-	app.use(server)
-
-	var httpServer = http.createServer(app)
-
-	return httpServer
+		return staticServe(req, res)
+	}
 }
 
 var getProxyServer = function() {
@@ -104,15 +99,50 @@ var getProxyServer = function() {
 		}
 	}
 
-	var proxyServer = proxy.createServer(logger("PROXY", id), opts)
+	var serveStatic = getStaticServer()
 
-	return proxyServer
+	var proxy = Proxy(config.api.url)
+
+	var func = function(req, res) {
+		req.on("error", function(err) {
+			console.log(err);
+			res.writeHead(500);
+			res.end();
+		});
+		var path = url.parse(req.url).pathname
+		if(path !== null && path.match(/^\/api/)) {
+			return proxy(req, res)
+		}
+
+		return serveStatic(req, res)
+	}
+
+	var httpServer
+	if(config.proxy.https) {
+		httpServer = require("https").createServer(config.proxy.https, func)
+	} else {
+		httpServer = require("http").createServer(func)
+	}
+
+	return httpServer
 }
 
-if(id % 2 == 0) {
-	console.log("[" + id + "] HTTP Proxy listening on " + config.proxy.host + ":" + config.proxy.port)
-	getProxyServer().listen(config.proxy.port, config.proxy.host)
-} else {
-	console.log("[" + id + "] HTTP static server listening on " + config.files.host + ":" + config.files.port)
-	getStaticServer().listen(config.files.port, config.files.host)
+
+var server = getProxyServer()
+if(config.proxy.https) {
+	var host = config.proxy.host === "0.0.0.0" ? "localhost" : config.proxy.host
+	http.createServer(function(req, res) {
+		var target = url.parse(req.url)
+		target.protocol = "https"
+		target.host = req.headers.host || host
+
+		console.log(url.format(target))
+		res.statusCode = 302
+		res.setHeader("Location", url.format(target))
+		res.end()
+	}).listen(80)
 }
+
+server.listen(config.proxy.https ? 443 : config.proxy.port, config.proxy.host)
+console.log("Listening on port " + (config.proxy.https ? 443 : config.proxy.port))
+
