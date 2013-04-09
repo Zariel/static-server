@@ -41,7 +41,6 @@ var id = cluster.worker.id;
 
 var http = require("http")
 var path = require("path")
-//var httpProxy = require("http-proxy")
 var lactate = require("lactate")
 var Proxy = require("./lib/proxy")
 
@@ -87,17 +86,8 @@ var getStaticServer = function() {
 }
 
 var getProxyServer = function() {
-	var proxy = require("http-proxy")
 
 	var files = config.files.host + ":" + config.files.port
-
-	var opts = {
-		pathnameOnly: true,
-		router: {
-			"/api": config.api.url,
-			"/": files
-		}
-	}
 
 	var serveStatic = getStaticServer()
 
