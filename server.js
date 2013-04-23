@@ -44,7 +44,11 @@ var path = require("path")
 var lactate = require("lactate")
 var Proxy = require("./lib/proxy")
 
-var getStaticServer = function() {
+var errorLog = function(req, res, err) {
+	console.log(err)
+}
+
+var getStaticServer = function(id) {
 	var root = path.join(__dirname, config.files.root)
 
 	var log = logger("STATIC", id)
@@ -54,6 +58,8 @@ var getStaticServer = function() {
 	})
 
 	var staticServe = function(req, res) {
+		console.log("[" + id + "] (STATIC) => " + req.url)
+
 		files.serve(req, res)
 	}
 
@@ -61,7 +67,6 @@ var getStaticServer = function() {
 
 		var originalUrl = req.url
 		var path = url.parse(originalUrl).pathname
-		req.url = path
 		var folder = path.match(/^\/[^\/]*\//)
 
 		if(folder === null) {
@@ -76,31 +81,34 @@ var getStaticServer = function() {
 			case "/partials/":
 			case "/font/":
 			case "/img/":
+				req.url = path
 				return staticServe(req, res)
 		}
 
 		req.url = "/index.html"
-
 		return staticServe(req, res)
 	}
 }
 
-var getProxyServer = function() {
+var getProxyServer = function(id) {
 
 	var files = config.files.host + ":" + config.files.port
 
-	var serveStatic = getStaticServer()
+	var serveStatic = getStaticServer(id)
 
 	var proxy = Proxy(config.api.url)
 
 	var func = function(req, res) {
+		// All errosr from the proxy are sent back to here
 		req.on("error", function(err) {
-			console.log(err);
+			errorLog(req, res, err)
 			res.writeHead(500);
 			res.end();
 		});
+
 		var path = url.parse(req.url).pathname
 		if(path !== null && path.match(/^\/api/)) {
+			console.log("[" + id + "] (PROXY) => " + req.url)
 			return proxy(req, res)
 		}
 
@@ -118,7 +126,7 @@ var getProxyServer = function() {
 }
 
 
-var server = getProxyServer()
+var server = getProxyServer(cluster.worker.id)
 if(config.proxy.https) {
 	var host = config.proxy.host === "0.0.0.0" ? "localhost" : config.proxy.host
 	http.createServer(function(req, res) {
@@ -126,11 +134,11 @@ if(config.proxy.https) {
 		target.protocol = "https"
 		target.host = req.headers.host || host
 
-		console.log(url.format(target))
-		res.statusCode = 302
+		res.statusCode = 301
 		res.setHeader("Location", url.format(target))
+		res.setHeader("Cache-Control", "public, max-age=172000")
 		res.end()
-	}).listen(80)
+	}).listen(80, config.proxy.host)
 }
 
 server.listen(config.proxy.https ? 443 : config.proxy.port, config.proxy.host)
