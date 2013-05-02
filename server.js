@@ -136,7 +136,6 @@ if(config.proxy.https) {
 
 		res.statusCode = 301
 		res.setHeader("Location", url.format(target))
-		res.setHeader("Cache-Control", "public, max-age=172000")
 		res.end()
 	}).listen(80, config.proxy.host)
 }
