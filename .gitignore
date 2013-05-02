@@ -1,17 +1,4 @@
-*.class
-*.swp
-
 # Package Files #
-*.jar
-*.war
-*.ear
-/target
-/.settings/
-/.classpath
-/.project
-/.externalToolBuilders
-
-*.seed
 *.log
 *.csv
 *.dat
@@ -28,6 +15,5 @@ node_modules
 
 npm-debug.log
 
-/static/public
-/web/app/assets/partials/
-/web/app/assets/*.html
+keys/
+config.js

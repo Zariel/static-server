@@ -3,15 +3,10 @@
   "name": "static-server",
   "description": "Static file server",
   "version": "0.1.0",
-  "repository": {
-    "type": "git",
-    "url": "git@dicomexplorer.net:chris/project.git"
-  },
+  "repository": {},
   "main": "server.ls",
   "dependencies": {
-    "ecstatic": "git://github.com/Zariel/node-ecstatic.git#custom-cache-control",
-    "http-proxy": "git://github.com/Zariel/node-http-proxy.git#pathname-targets",
-	"express": ">= 3.1.x"
+    "lactate": "~0.13.11"
   },
   "devDependencies": {},
   "optionalDependencies": {},
