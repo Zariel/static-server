@@ -13,19 +13,25 @@ var path = require("path")
 var fs = require("fs")
 
 module.exports = {
+	// The directory to serve static files from
 	files: {
 		root: path.normalize("../web-app/build"),
 	},
+	// Proxy settings
 	proxy: {
+		// Host to listen on
 		host: "0.0.0.0",
 		port: 80,
+		// Optional https config, this will cause the server to list on
+		// port 443 as well
 		https: {
 			key: fs.readFileSync("keys/cert.pem"),
 			cert: fs.readFileSync("keys/cert.pem")
 		}
 	},
+	// URL to 
 	api: {
-		url: "http://localhost:8080/api/server"
+		"/api/": "http://localhost:8080/api/server"
 	}
 }
 ```
