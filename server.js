@@ -82,16 +82,24 @@ var getStaticServer = function(id) {
 	}
 }
 
-var getProxyServer = function(id) {
+String.prototype.startsWith = function(str) {
+	return this.substring(0, str.length) === str
+}
 
-	var files = config.files.host + ":" + config.files.port
+var getProxyServer = function(id) {
 
 	var serveStatic = getStaticServer(id)
 
-	var proxy = Proxy(config.api.url)
+	var targets = config.api
+	var proxies = {}
+
+	for(var matcher in targets) {
+		var target = targets[matcher]
+		proxies[matcher] = Proxy(target)
+	}
 
 	var func = function(req, res) {
-		// All errosr from the proxy are sent back to here
+		// All errors from the proxy are sent back to here
 		req.on("error", function(err) {
 			errorLog(req, res, err)
 			res.writeHead(500);
@@ -99,9 +107,13 @@ var getProxyServer = function(id) {
 		});
 
 		var path = url.parse(req.url).pathname
-		if(path !== null && path.match(/^\/api/)) {
-			console.log("[" + id + "] (PROXY) => " + req.url)
-			return proxy(req, res)
+		if(path !== null) {
+			for(var matcher in proxies) {
+				if(path.startsWith(matcher)) {
+					console.log("[" + id + "] (PROXY) => " + req.url)
+					return proxies[matcher](req, res)
+				}
+			}
 		}
 
 		return serveStatic(req, res)
