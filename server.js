@@ -28,10 +28,6 @@ config.proxy = config.proxy || {}
 config.proxy.host = config.proxy.host || "localhost"
 config.proxy.port = (config.proxy.port === undefined) ? 80 : config.proxy.port
 config.proxy.api = config.proxy.api || {}
-config.api.uri = config.api.uri || "localhost:8080/api"
-config.api.path = config.api.path || "/api"
-config.files.host = config.files.host || "localhost:8081"
-config.files.port = (config.files.port === undefined) ? 8081 : config.files.port
 
 var id = cluster.worker.id;
 
