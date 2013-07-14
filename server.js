@@ -6,11 +6,7 @@ if(cluster.isMaster) {
 	var numCpus = require("os").cpus().length
 
 	for(var i = 0; i < numCpus; i++) {
-		var opts = {
-			proxy: i % 2 == 0
-		}
-
-		cluster.fork(opts)
+		cluster.fork()
 	}
 
 	cluster.on('exit', function(worker, code, signal) {
@@ -142,4 +138,3 @@ if(config.proxy.https) {
 
 server.listen(config.proxy.https ? 443 : config.proxy.port, config.proxy.host)
 console.log("Listening on port " + (config.proxy.https ? 443 : config.proxy.port))
-
