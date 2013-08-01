@@ -110,6 +110,10 @@ var getProxyServer = function(id) {
 		if(path !== null) {
 			for(var matcher in proxies) {
 				if(path.startsWith(matcher)) {
+					if(config.api.stripMatched) {
+						req.url = req.url.substring(matcher.length)
+					}
+
 					console.log("[" + id + "] (PROXY) => " + req.url)
 					return proxies[matcher](req, res)
 				}
