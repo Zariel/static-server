@@ -90,7 +90,7 @@ var getProxyServer = function(id) {
 
 	var serveStatic = getStaticServer(id)
 
-	var targets = config.api
+	var targets = config.api.routes
 	var proxies = {}
 
 	for(var matcher in targets) {
